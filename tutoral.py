@@ -1,5 +1,6 @@
 import tensorflow as tf
 import tensorflow_hub as hub
+import sentencepiece as spm
 import bert
 import os
 
@@ -56,15 +57,16 @@ class ALBERT():
         self.model = self.build_network(albert_layer, max_text_size)
         bert.load_albert_weights(albert_layer, model_ckpt)
 
-        smp_hub_url = "https://tfhub.dev/google/universal-sentence-encoder-lite/2"
-        smp_model = hub.load(smp_hub_url)
+        spm_model = os.path.join(model_dir, "assets", "30k-clean.model")
+        sp = spm.SentencePieceProcessor()
+        sp.load(spm_model)
 
         do_lower_case = True
 
         token_ids_a = self.preprocess_input(
-            smp_model, first_text, do_lower_case)
+            spm_model, first_text, do_lower_case)
         token_ids_b= self.preprocess_input(
-            smp_model, second_text, do_lower_case)
+            spm_model, second_text, do_lower_case)
 
         text_prediction_a = self.predict_result(token_ids_a)
         text_prediction_b = self.predict_result(token_ids_b)
