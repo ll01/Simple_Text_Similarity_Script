@@ -70,6 +70,9 @@ class USE():
         output =self.encode_all_rows(datapoints)
         
         self.scores = get_similarity_scores(original_text_encoding, output)
+        ids = np.array(comparison_items)[:,0]
+        self.results = np.column_stack([ids, self.scores])
+        print(self.results)
 
     
     def encode_all_columns(self,datapoints):
