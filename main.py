@@ -16,8 +16,8 @@ def main():
     print(header)
     _, sainsbury_items_data = readCsv(args.sainsbury)
     for item in sainsbury_items_data:
-        a = USE(item, argos_items_data )
-        save_results(a.results, args.output)
+        parsed_item = USE(item, argos_items_data )
+        save_results(parsed_item.results, args.output)
 
     # ALBERT(argos, sainsbury)
 
@@ -28,7 +28,7 @@ def set_up_args():
          default="./MOCK_DATA_small.csv")
     parser.add_argument(
         '-s','--sainsbury',
-        help='sainburuys items csv this is checked against the argos items'\
+        help='sainsbury\'s items csv this is checked against the argos items'\
             'to find maches', required=False, default="./sainsbury.csv")
     parser.add_argument('-o', '--output',
      help='where the output file is to be saved', required=False,
