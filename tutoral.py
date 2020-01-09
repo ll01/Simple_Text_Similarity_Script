@@ -10,7 +10,14 @@ def main():
     argos = """With its modern ridged texture design and high gloss finish, this Breville Impressions Vanilla Cream 4 Slice Toaster will make a style statement in any kitchen. There to help at breakfast, lunch or dinner, this Impressions Toaster is packed with handy features to create your perfect slice.
 
         Variable width slots take different bread sizes, crumpets & bagels; high-lift makes removing smaller slices easy; and variable browning means each slice is just how you like it. Defrost, reheat & cancel controls are illuminated for quick & easy use. """
+    
+    
+    
+    
+    
     USE(argos, sainsbury)
+
+
     # ALBERT(argos, sainsbury)
 
 def cosine_similarity(a, b):
@@ -31,15 +38,22 @@ def get_similarity_score(a, b):
 
 
 class USE():
-    def __init__(self, first_text, second_text):
+    def __init__(self, original_text, comparison_texts):
         self.hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
         model = hub.load(self.hub_url)
-        a = self.encode_using_universal_sentence_encoder(first_text, model)
-        b = self.encode_using_universal_sentence_encoder(second_text, model)
-        print(get_similarity_score(a, b))
+        a = self.encode_using_universal_sentence_encoder(original_text, model)
+        self.results = []
+        for text in comparison_texts:
+            b = self.encode_using_universal_sentence_encoder(text, model)
+             get_similarity_score(a, b)
 
     def encode_using_universal_sentence_encoder(self, text, model_from_hub):
         embeddings = model_from_hub([text])
+        embeddings_normalized = tf.math.l2_normalize(embeddings)
+        return embeddings_normalized
+    
+    def encode_using_universal_sentence_encoder(self,data, model_from_hub):
+        embeddings = model_from_hub(data)
         embeddings_normalized = tf.math.l2_normalize(embeddings)
         return embeddings_normalized
 
@@ -57,16 +71,16 @@ class ALBERT():
         self.model = self.build_network(albert_layer, max_text_size)
         bert.load_albert_weights(albert_layer, model_ckpt)
 
-        spm_model = os.path.join(model_dir, "assets", "30k-clean.model")
+        spm_model = os.path.join(model_dir, "30k-clean.model")
         sp = spm.SentencePieceProcessor()
         sp.load(spm_model)
 
         do_lower_case = True
 
         token_ids_a = self.preprocess_input(
-            spm_model, first_text, do_lower_case)
+            sp, first_text, do_lower_case)
         token_ids_b= self.preprocess_input(
-            spm_model, second_text, do_lower_case)
+            sp, second_text, do_lower_case)
 
         text_prediction_a = self.predict_result(token_ids_a)
         text_prediction_b = self.predict_result(token_ids_b)
