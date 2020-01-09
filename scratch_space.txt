@@ -5,3 +5,4 @@
 
          # self.hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
         # model = hub.load(self.hub_url)
+    test_sainsbury_item = ["sainsburys sku", "title", "description"]

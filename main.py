@@ -5,18 +5,37 @@ import bert
 import os
 import csv
 import numpy as np
+import argparse
 
 
 def main():
-    header, argos_items_data = readCsv("./MOCK_DATA_small.csv")
-    test_sainsbury_item = ["sainsburys sku", "title", "description"]
+   
+    args = set_up_args()
 
-    a =  USE(test_sainsbury_item[1:], argos_items_data )
-
-    print(np.array(a.scores))
-    
+    header, argos_items_data = readCsv(args.argos)
+    print(header)
+    _, sainsbury_items_data = readCsv(args.sainsbury)
+    for item in sainsbury_items_data:
+        a = USE(item, argos_items_data )
+        save_results(a.results, args.output)
 
     # ALBERT(argos, sainsbury)
+
+def set_up_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-a','--argos', help='argos items csv', required=False,
+         default="./MOCK_DATA_small.csv")
+    parser.add_argument(
+        '-s','--sainsbury',
+        help='sainburuys items csv this is checked against the argos items'\
+            'to find maches', required=False, default="./sainsbury.csv")
+    parser.add_argument('-o', '--output',
+     help='where the output file is to be saved', required=False,
+      default="./results.csv")
+
+    args = parser.parse_args()
+    return args
 
 def readCsv(file_path):
     data = []
@@ -27,6 +46,13 @@ def readCsv(file_path):
             data.append(row)
     header = data.pop(0)
     return header, data
+
+def save_results(data, file_path):
+    with open(file_path,) as csvDataFile:
+        for row in data:
+            csvWriter = csv.writer(csvDataFile)
+            csvWriter.writerow(row)
+
 
 def cosine_similarity(a, b):
 
@@ -72,7 +98,6 @@ class USE():
         self.scores = get_similarity_scores(original_text_encoding, output)
         ids = np.array(comparison_items)[:,0]
         self.results = np.column_stack([ids, self.scores])
-        print(self.results)
 
     
     def encode_all_columns(self,datapoints):
