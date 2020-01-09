@@ -8,6 +8,7 @@ import numpy as np
 import argparse
 
 
+
 def main():
    
     args = set_up_args()
@@ -16,6 +17,7 @@ def main():
     print(header)
     _, sainsbury_items_data = readCsv(args.sainsbury)
     for item in sainsbury_items_data:
+        
         parsed_item = USE(item, argos_items_data )
         save_results(parsed_item.results, args.output)
 
