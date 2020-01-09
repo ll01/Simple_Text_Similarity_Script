@@ -9,10 +9,11 @@ import numpy as np
 
 def main():
     header, argos_items_data = readCsv("./MOCK_DATA_small.csv")
-    print(argos_items_data)
     test_sainsbury_item = ["sainsburys sku", "title", "description"]
 
-    USE(test_sainsbury_item, argos_items_data)
+    a =  USE(test_sainsbury_item[1:], argos_items_data)
+
+    print(np.array(a.scores))
     
 
     # ALBERT(argos, sainsbury)
@@ -44,28 +45,54 @@ def cosine_similarity(a, b):
 def get_similarity_score(a, b):
     return 1.0 - cosine_similarity(a, b)
 
+def get_similarity_scores(a, datapoints):
+    scores = []
+    for datapoint in datapoints:
+        datapoint_score  = []
+        for i ,column in enumerate(datapoint):
+            datapoint_score.append(1.0 - cosine_similarity(a[i], column))
+        scores.append(datapoint_score)
+    return scores
 
 class USE():
     def __init__(self, original_text, comparison_items, batch_size=10000):
-        self.hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
-        model = hub.load(self.hub_url)
-        a = self.encode_using_universal_sentence_encoder(original_text, model)
+       
+        self.model = tf.keras.models.load_model('.models/use/')
+
+        original_text_encoding = self.encode_all_columns(original_text)
+        
         self.results = []
         product_matrix = np.array(comparison_items)
-        product_matrix = tf.reshape(product_matrix, shape=(-1, batch_size))
+
+        datapoints = product_matrix[:,1:len(product_matrix[0])]
+
+       
+        output =self.encode_all_rows(datapoints)
         
-        self.results = self.encode_using_universal_sentence_encoder(product_matrix, model)
+        self.scores = get_similarity_scores(original_text_encoding, output)
 
+    
+    def encode_all_columns(self,datapoints):
+        output = []
+        for column in datapoints:
+            output.append(
+                self.encode_using_universal_sentence_encoder(
+                    column,self.model))
+        return output
+    
+    def encode_all_rows(self, datapoints):
+        output = []
+        for row in datapoints:
+            output.append(self.encode_all_columns(row))
+        return output
 
-        # for text in comparison_texts:
-        #     b = self.encode_using_universal_sentence_encoder(text, model)
-        #     get_similarity_score(a, b)
+        
+    
 
     def encode_using_universal_sentence_encoder(self, data, model_from_hub):
-        embeddings = model_from_hub(data)
+        embeddings = model_from_hub([data])
         embeddings_normalized = tf.math.l2_normalize(embeddings)
         return embeddings_normalized
-
 
 class ALBERT():
     def __init__(self, first_text, second_text):
@@ -112,6 +139,7 @@ class ALBERT():
         return self.model.predict(
             token_ids, batch_size=1, use_multiprocessing=True)
         
+
 
 
 if __name__ == "__main__":

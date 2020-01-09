@@ -2,3 +2,6 @@
     argos = """With its modern ridged texture design and high gloss finish, this Breville Impressions Vanilla Cream 4 Slice Toaster will make a style statement in any kitchen. There to help at breakfast, lunch or dinner, this Impressions Toaster is packed with handy features to create your perfect slice.
 
         Variable width slots take different bread sizes, crumpets & bagels; high-lift makes removing smaller slices easy; and variable browning means each slice is just how you like it. Defrost, reheat & cancel controls are illuminated for quick & easy use. """
+
+         # self.hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
+        # model = hub.load(self.hub_url)
