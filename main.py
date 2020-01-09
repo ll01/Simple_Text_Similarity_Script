@@ -31,7 +31,7 @@ def set_up_args():
         help='sainsbury\'s items csv this is checked against the argos items'\
             'to find maches', required=False, default="./sainsbury.csv")
     parser.add_argument('-o', '--output',
-     help='where the output file is to be saved', required=False,
+     help='where the output directory', required=False,
       default="./results.csv")
 
     args = parser.parse_args()
@@ -47,7 +47,9 @@ def readCsv(file_path):
     header = data.pop(0)
     return header, data
 
-def save_results(data, file_path):
+def save_results(data, folder_path):
+    file_path = os.path.join(folder_path, "{}.csv".format(data[0]))
+
     with open(file_path,) as csvDataFile:
         for row in data:
             csvWriter = csv.writer(csvDataFile)
