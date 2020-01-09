@@ -11,7 +11,7 @@ def main():
     header, argos_items_data = readCsv("./MOCK_DATA_small.csv")
     test_sainsbury_item = ["sainsburys sku", "title", "description"]
 
-    a =  USE(test_sainsbury_item[1:], argos_items_data)
+    a =  USE(test_sainsbury_item[1:], argos_items_data )
 
     print(np.array(a.scores))
     
@@ -57,7 +57,7 @@ def get_similarity_scores(a, datapoints):
 class USE():
     def __init__(self, original_text, comparison_items, batch_size=10000):
        
-        self.model = tf.keras.models.load_model('.models/use/')
+        self.model = tf.keras.models.load_model('models/use/')
 
         original_text_encoding = self.encode_all_columns(original_text)
         
@@ -97,7 +97,7 @@ class USE():
 class ALBERT():
     def __init__(self, first_text, second_text):
         model_name = "albert_base_v2"
-        model_dir = bert.fetch_google_albert_model(model_name, ".models")
+        model_dir = bert.fetch_google_albert_model(model_name, "models")
         model_ckpt = os.path.join(model_dir, "model.ckpt-best")
         model_params = bert.albert_params(model_dir)
 
