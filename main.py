@@ -60,6 +60,7 @@ def save_results(data, file_path):
             csvWriter.writerow(row)
 
 
+
 def cosine_similarity(a, b):
 
     # https://en.wikipedia.org/wiki/Cosine_similarity
@@ -94,9 +95,9 @@ class USE():
         original_text_encoding = self.encode_all_columns(original_text)
         
         self.results = []
-        product_matrix = np.array(comparison_items)
+        # product_matrix = np.array(comparison_items)
 
-        datapoints = product_matrix[:,1:len(product_matrix[0])]
+        datapoints = [row[1:3] for row in comparison_items]
 
        
         output =self.encode_all_rows(datapoints)
