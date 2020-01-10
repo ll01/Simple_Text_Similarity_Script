@@ -88,7 +88,6 @@ def get_similarity_scores(a, datapoints):
 class USE():
     def __init__(self, original_text, comparison_items, batch_size=10000):
        
-        # self.model = tf.keras.models.load_model('models/use/')
         hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
         self.model = hub.load(hub_url)
         original_text_encoding = self.encode_all_columns(original_text)
