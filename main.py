@@ -17,9 +17,10 @@ def main():
     print(header)
     _, sainsbury_items_data = readCsv(args.sainsbury)
     for item in sainsbury_items_data:
-        
+
         parsed_item = USE(item, argos_items_data )
-        save_results(parsed_item.results, args.output)
+        file_path = os.path.join(args.output, "{}.csv".format(item[0]))
+        save_results(parsed_item.results, file_path)
 
     # ALBERT(argos, sainsbury)
 
@@ -34,25 +35,25 @@ def set_up_args():
             'to find maches', required=False, default="./sainsbury.csv")
     parser.add_argument('-o', '--output',
      help='where the output directory', required=False,
-      default="./results.csv")
+      default="./results/")
+   
 
     args = parser.parse_args()
+    os.makedirs(args.output, exist_ok=True)
     return args
 
-def readCsv(file_path):
+def readCsv(file_path, delim=","):
     data = []
     with open(file_path,) as csvDataFile:
-        csvReader = csv.reader(csvDataFile)
+        csvReader = csv.reader(csvDataFile, delimiter=delim)
         header = None
         for row in csvReader:
             data.append(row)
     header = data.pop(0)
     return header, data
 
-def save_results(data, folder_path):
-    file_path = os.path.join(folder_path, "{}.csv".format(data[0]))
-
-    with open(file_path,) as csvDataFile:
+def save_results(data, file_path):
+    with open(file_path,"w") as csvDataFile:
         for row in data:
             csvWriter = csv.writer(csvDataFile)
             csvWriter.writerow(row)
@@ -87,8 +88,9 @@ def get_similarity_scores(a, datapoints):
 class USE():
     def __init__(self, original_text, comparison_items, batch_size=10000):
        
-        self.model = tf.keras.models.load_model('models/use/')
-
+        # self.model = tf.keras.models.load_model('models/use/')
+        hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
+        self.model = hub.load(hub_url)
         original_text_encoding = self.encode_all_columns(original_text)
         
         self.results = []

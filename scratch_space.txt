@@ -8,3 +8,7 @@
     test_sainsbury_item = ["sainsburys sku", "title", "description"]
 
 .*,,.*\n
+
+
+
+^[^\t]+\t(.)([^\t]+)$
