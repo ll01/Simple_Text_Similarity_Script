@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-a", "${workspaceFolder}/argos.csv"]
+            "args": ["-a", "${workspaceFolder}/argos.tsv"]
         }
     ]
 }
