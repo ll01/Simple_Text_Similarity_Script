@@ -48,7 +48,8 @@ def readCsv(file_path, delim=","):
         csvReader = csv.reader(csvDataFile, delimiter=delim)
         header = None
         for row in csvReader:
-            data.append(row)
+            if len(row) == 3:
+                data.append(row)
     header = data.pop(0)
     return header, data
 
