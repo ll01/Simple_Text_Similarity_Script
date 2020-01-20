@@ -82,8 +82,8 @@ def save_results(data, file_path):
 
 def write_progress(item, batch):
     with open("progress.txt", "w") as progress_file:
-        progress_file.write(item)
-        progress_file.write(batch)
+        progress_file.write(str(item))
+        progress_file.write(str(batch))
 
 
 def cosine_similarity(a, b):
