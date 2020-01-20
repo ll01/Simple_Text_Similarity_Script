@@ -10,39 +10,52 @@ import math
 import time
 
 
-
 def main():
-   
+
     args = set_up_args()
 
     header, argos_items_data = readCsv(args.argos)
     print(header)
     _, sainsbury_items_data = readCsv(args.sainsbury)
-    for item in sainsbury_items_data:
+    comparison_engine = USE()
 
-        parsed_item = USE(item, argos_items_data )
-        file_path = os.path.join(args.output, "{}.csv".format(item[0]))
-        save_results(parsed_item.results, file_path)
+    item_start = 0
+    batch_start = 0
+
+    batch_count = math.ceil(len(argos_items_data) / args.batch_size)
+
+    for item in sainsbury_items_data:
+        for batch in range(batch_start, batch_count):
+            start_index = (batch * args.batch_size)
+            end_index = min((start_index+args.batch_size),
+                            len(argos_items_data))
+            comparison_engine.compare_items(
+                item, argos_items_data[start_index:end_index])
+            file_path = os.path.join(args.output, "{}.csv".format(item[0]))
+            save_results(comparison_engine.scores, file_path)
 
     # ALBERT(argos, sainsbury)
+
 
 def set_up_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-a','--argos', help='argos items csv', required=False,
-         default="./argos.csv")
+        '-a', '--argos', help='argos items csv', required=False,
+        default="./argos.csv")
     parser.add_argument(
-        '-s','--sainsbury',
-        help='sainsbury\'s items csv this is checked against the argos items'\
-            'to find maches', required=False, default="./sainsburys.csv")
+        '-s', '--sainsbury',
+        help='sainsbury\'s items csv this is checked against the argos items'
+        'to find maches', required=False, default="./sainsburys.csv")
     parser.add_argument('-o', '--output',
-     help='where the output directory', required=False,
-      default="./results/")
-   
-
+                        help='where the output directory', required=False,
+                        default="./results/")
+    parser.add_argument('-b', '--batch_size',
+                        help='amount of argos items to compare in each batch',
+                        required=False, default=10000)
     args = parser.parse_args()
     os.makedirs(args.output, exist_ok=True)
     return args
+
 
 def readCsv(file_path, delim=","):
     data = []
@@ -55,12 +68,12 @@ def readCsv(file_path, delim=","):
     header = data.pop(0)
     return header, data
 
+
 def save_results(data, file_path):
-    with open(file_path,"w") as csvDataFile:
+    with open(file_path, "a") as csvDataFile:
         for row in data:
             csvWriter = csv.writer(csvDataFile)
             csvWriter.writerow(row)
-
 
 
 def cosine_similarity(a, b):
@@ -74,75 +87,63 @@ def cosine_similarity(a, b):
     # normalizing between 1 and -1
     clip_cosine_similarities = tf.clip_by_value(cosine_similarity, -1.0, 1.0)
     return tf.acos(clip_cosine_similarities)
-    
 
 
 def get_similarity_score(a, b):
     return 1.0 - cosine_similarity(a, b)
 
+
 def get_similarity_scores(a, datapoints):
     scores = []
     for datapoint in datapoints:
-        datapoint_score  = []
-        for i ,column in enumerate(datapoint):
+        datapoint_score = []
+        for i, column in enumerate(datapoint):
             datapoint_score.append(1.0 - cosine_similarity(a[i], column))
         scores.append(datapoint_score)
     return scores
 
+
 class USE():
-    def __init__(self, original_text, comparison_items, batch_size=10000):
-       
+    def __init__(self):
+
         hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
         self.model = hub.load(hub_url)
-        original_text_encoding = self.encode_all_columns(original_text)
-        
-        self.results = []
-        # product_matrix = np.array(comparison_items)
+        self.scores = None
 
-        batch_count = math.ceil(len(comparison_items)/batch_size)
-        print("argos items {}".format(len(comparison_items)))
-        for batch in range(batch_count):
-            start_value = batch * batch_size
-            end_value = min( start_value + batch_size, len(comparison_items))
-            start_time = time.time()
-            print("start {} end {}".format(start_value, end_value))
-            print("batch {} out of {}".format(batch+1 ,batch_count))
+    def compare_items(self, original_item, comparison_items):
+        start_time = time.time()
+        original_text_encoding = self.encode_all_columns(original_item[1:])
 
-            batch_comparison_items = comparison_items[start_value:end_value]
-            datapoints = [row[1:3] for row in batch_comparison_items ]
+        comparison_text = [row[1:3] for row in comparison_items]
+        comparison_ids = np.array(comparison_items)[:, 0]
+        output = self.encode_all_rows(comparison_text)
 
-            output =self.encode_all_rows(datapoints)
-            
-            self.scores = get_similarity_scores(original_text_encoding, output)
-            ids = np.array(batch_comparison_items)[:,0]
-           
-            results_for_batch = np.column_stack([ids, self.scores])
-            self.results.extend(results_for_batch)
-            end_time = time.time()
-            print("batch{} exicution time {}s".format(batch+1,(end_time - start_time)))
+        self.scores = get_similarity_scores(original_text_encoding, output)
+        self.scores = np.column_stack([comparison_ids, self.scores])
 
-    
-    def encode_all_columns(self,datapoints):
+        end_time = time.time()
+        print("comparison of {} items ran for {}s".format(
+            len(comparison_items),  end_time - start_time))
+
+    def encode_all_columns(self, datapoints):
         output = []
         for column in datapoints:
             output.append(
                 self.encode_using_universal_sentence_encoder(
-                    column,self.model))
+                    column, self.model))
         return output
-    
+
     def encode_all_rows(self, datapoints):
         output = []
         for row in datapoints:
             output.append(self.encode_all_columns(row))
         return output
 
-        
-    
-
     def encode_using_universal_sentence_encoder(self, data, model_from_hub):
         embeddings = model_from_hub([data])
         embeddings_normalized = tf.math.l2_normalize(embeddings)
         return embeddings_normalized
+
 
 class ALBERT():
     def __init__(self, first_text, second_text):
@@ -165,7 +166,7 @@ class ALBERT():
 
         token_ids_a = self.preprocess_input(
             sp, first_text, do_lower_case)
-        token_ids_b= self.preprocess_input(
+        token_ids_b = self.preprocess_input(
             sp, second_text, do_lower_case)
 
         text_prediction_a = self.predict_result(token_ids_a)
@@ -181,15 +182,14 @@ class ALBERT():
         return model
 
     def preprocess_input(self, smp_model, text, lower=True):
-        processed_text =bert.albert_tokenization.preprocess_text(text, lower=lower)
+        processed_text = bert.albert_tokenization.preprocess_text(
+            text, lower=lower)
         return bert.albert_tokenization.encode_ids(smp_model, processed_text)
 # https://github.com/kpe#/bert-for-tf2
 
     def predict_result(self, token_ids):
         return self.model.predict(
             token_ids, batch_size=1, use_multiprocessing=True)
-        
-
 
 
 if __name__ == "__main__":
