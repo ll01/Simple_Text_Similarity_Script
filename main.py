@@ -24,7 +24,7 @@ def main():
 
     batch_count = math.ceil(len(argos_items_data) / args.batch_size)
 
-    for item_index, item in enumerate(sainsbury_items_data):
+    for item_index, item in enumerate(sainsbury_items_data, item_start):
         for batch in range(batch_start, batch_count):
             print("item {} batch {} out of {}".format(
                 item_index + 1, batch + 1, batch_count))
@@ -36,9 +36,7 @@ def main():
                 item, argos_items_data[start_index:end_index])
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
             save_results(comparison_engine.scores, file_path)
-            item_start += 1
-            batch_start += 1
-            write_progress(item_start, batch_start)
+            write_progress(item_index, batch)
 
 
 def set_up_args():
@@ -55,7 +53,7 @@ def set_up_args():
                         default="./results/")
     parser.add_argument('-b', '--batch_size',
                         help='amount of argos items to compare in each batch',
-                        required=False, default=10000)
+                        required=False, type=int, default=10000)
     args = parser.parse_args()
     os.makedirs(args.output, exist_ok=True)
     return args
@@ -74,7 +72,7 @@ def readCsv(file_path, delim=","):
 
 
 def save_results(data, file_path):
-    with open(file_path, "a") as csvDataFile:
+    with open(file_path, "a", newline='') as csvDataFile:
         for row in data:
             csvWriter = csv.writer(csvDataFile)
             csvWriter.writerow(row)
@@ -82,8 +80,7 @@ def save_results(data, file_path):
 
 def write_progress(item, batch):
     with open("progress.txt", "w") as progress_file:
-        progress_file.write(str(item))
-        progress_file.write(str(batch))
+        progress_file.write("{}\n{}\n".format(item, batch))
 
 
 def cosine_similarity(a, b):
