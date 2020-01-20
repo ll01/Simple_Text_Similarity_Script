@@ -6,6 +6,8 @@ import os
 import csv
 import numpy as np
 import argparse
+import math
+import time
 
 
 
@@ -28,11 +30,11 @@ def set_up_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-a','--argos', help='argos items csv', required=False,
-         default="./MOCK_DATA_small.csv")
+         default="./argos.csv")
     parser.add_argument(
         '-s','--sainsbury',
         help='sainsbury\'s items csv this is checked against the argos items'\
-            'to find maches', required=False, default="./sainsbury.csv")
+            'to find maches', required=False, default="./sainsburys.csv")
     parser.add_argument('-o', '--output',
      help='where the output directory', required=False,
       default="./results/")
@@ -97,14 +99,27 @@ class USE():
         self.results = []
         # product_matrix = np.array(comparison_items)
 
-        datapoints = [row[1:3] for row in comparison_items]
+        batch_count = math.ceil(len(comparison_items)/batch_size)
+        print("argos items {}".format(len(comparison_items)))
+        for batch in range(batch_count):
+            start_value = batch * batch_size
+            end_value = min( start_value + batch_size, len(comparison_items))
+            start_time = time.time()
+            print("start {} end {}".format(start_value, end_value))
+            print("batch {} out of {}".format(batch+1 ,batch_count))
 
-       
-        output =self.encode_all_rows(datapoints)
-        
-        self.scores = get_similarity_scores(original_text_encoding, output)
-        ids = np.array(comparison_items)[:,0]
-        self.results = np.column_stack([ids, self.scores])
+            batch_comparison_items = comparison_items[start_value:end_value]
+            datapoints = [row[1:3] for row in batch_comparison_items ]
+
+            output =self.encode_all_rows(datapoints)
+            
+            self.scores = get_similarity_scores(original_text_encoding, output)
+            ids = np.array(batch_comparison_items)[:,0]
+           
+            results_for_batch = np.column_stack([ids, self.scores])
+            self.results.extend(results_for_batch)
+            end_time = time.time()
+            print("batch{} exicution time {}s".format(batch+1,(end_time - start_time)))
 
     
     def encode_all_columns(self,datapoints):
@@ -132,7 +147,7 @@ class USE():
 class ALBERT():
     def __init__(self, first_text, second_text):
         model_name = "albert_base_v2"
-        model_dir = bert.fetch_google_albert_model(model_name, "models")
+        model_dir = bert.fetch_google_albert_model(model_name, ".models")
         model_ckpt = os.path.join(model_dir, "model.ckpt-best")
         model_params = bert.albert_params(model_dir)
 
@@ -178,4 +193,5 @@ class ALBERT():
 
 
 if __name__ == "__main__":
+    os.environ["TFHUB_CACHE_DIR"] = './models'
     main()
