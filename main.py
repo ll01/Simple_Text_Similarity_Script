@@ -24,8 +24,10 @@ def main():
 
     batch_count = math.ceil(len(argos_items_data) / args.batch_size)
 
-    for item in sainsbury_items_data:
+    for item_index, item in enumerate(sainsbury_items_data):
         for batch in range(batch_start, batch_count):
+            print("item {} batch {} out of {}".format(
+                item_index + 1, batch + 1, batch_count))
             start_index = (batch * args.batch_size)
             end_index = min((start_index+args.batch_size),
                             len(argos_items_data))
@@ -33,8 +35,9 @@ def main():
                 item, argos_items_data[start_index:end_index])
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
             save_results(comparison_engine.scores, file_path)
-
-    # ALBERT(argos, sainsbury)
+            item_start += 1
+            batch_start += 1
+            write_progress(item_start, batch_start)
 
 
 def set_up_args():
@@ -74,6 +77,12 @@ def save_results(data, file_path):
         for row in data:
             csvWriter = csv.writer(csvDataFile)
             csvWriter.writerow(row)
+
+
+def write_progress(item, batch):
+    with open("progress.txt", "w") as progress_file:
+        progress_file.write(item)
+        progress_file.write(batch)
 
 
 def cosine_similarity(a, b):
