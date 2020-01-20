@@ -31,6 +31,7 @@ def main():
             start_index = (batch * args.batch_size)
             end_index = min((start_index+args.batch_size),
                             len(argos_items_data))
+            print("start_index: {}, end_index: {}".format(start_index, end_index))
             comparison_engine.compare_items(
                 item, argos_items_data[start_index:end_index])
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
@@ -131,7 +132,7 @@ class USE():
         self.scores = np.column_stack([comparison_ids, self.scores])
 
         end_time = time.time()
-        print("comparison of {} items ran for {}s".format(
+        print("comparison of {} items ran for {:0.2f}s".format(
             len(comparison_items),  end_time - start_time))
 
     def encode_all_columns(self, datapoints):
