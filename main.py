@@ -17,28 +17,29 @@ def main():
     header, argos_items_data = readCsv(args.argos)
     print(header)
     _, sainsbury_items_data = readCsv(args.sainsbury)
-    # comparison_engine = USE()
+    comparison_engine = USE()
 
-    item_start = 1
-    batch_start = 0
+    item_start = 18
+
+    batch_start = 2
 
     batch_count = math.ceil(len(argos_items_data) / args.batch_size)
     
-    sainsbury_items_data = sainsbury_items_data[item_start:]
+    sainsbury_items_data = list(enumerate(sainsbury_items_data))[item_start:]
 
-    for item_index, item in enumerate(sainsbury_items_data):
+    for sainsbury_item_index, item in sainsbury_items_data:
         for batch in range(batch_start, batch_count):
-            print("item {} id {} batch {} out of {}".format(
-                item_index + 1, item[0], batch + 1, batch_count))
+            print("sainsbury\'s id {} item {} batch {} out of {}".format(
+                item[0], sainsbury_item_index, batch + 1, batch_count))
             start_index = (batch * args.batch_size)
             end_index = min((start_index+args.batch_size),
                             len(argos_items_data))
-            print("start_index: {}, end_index: {}".format(start_index, end_index))
-            # comparison_engine.compare_items(
-            #     item, argos_items_data[start_index:end_index])
-            # file_path = os.path.join(args.output, "{}.csv".format(item[0]))
-            # save_results(comparison_engine.scores, file_path)
-            # write_progress(item_index, batch)
+            # print("start_index: {}, end_index: {}".format(start_index, end_index))
+            comparison_engine.compare_items(
+                item, argos_items_data[start_index:end_index])
+            file_path = os.path.join(args.output, "{}.csv".format(item[0]))
+            save_results(comparison_engine.scores, file_path)
+            write_progress(sainsbury_item_index, batch)
         batch_start = 0
 
 
