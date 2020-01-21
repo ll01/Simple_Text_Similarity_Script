@@ -37,6 +37,7 @@ def main():
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
             save_results(comparison_engine.scores, file_path)
             write_progress(item_index, batch)
+        batch_start = 0
 
 
 def set_up_args():
