@@ -72,7 +72,7 @@ def readCsv(file_path, delim=","):
 
 
 def save_results(data, file_path):
-    with open(file_path, "a", newline='') as csvDataFile:
+    with open(file_path, "a+", newline='') as csvDataFile:
         for row in data:
             csvWriter = csv.writer(csvDataFile)
             csvWriter.writerow(row)
