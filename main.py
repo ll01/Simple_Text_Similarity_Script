@@ -19,12 +19,12 @@ def main():
     _, sainsbury_items_data = readCsv(args.sainsbury)
     comparison_engine = USE()
 
-    item_start = 18
+    item_start = 0
 
-    batch_start = 2
+    batch_start = 0
 
     batch_count = math.ceil(len(argos_items_data) / args.batch_size)
-    
+
     sainsbury_items_data = list(enumerate(sainsbury_items_data))[item_start:]
 
     for sainsbury_item_index, item in sainsbury_items_data:
@@ -34,7 +34,7 @@ def main():
             start_index = (batch * args.batch_size)
             end_index = min((start_index+args.batch_size),
                             len(argos_items_data))
-            # print("start_index: {}, end_index: {}".format(start_index, end_index))
+            print("start_index: {}, end_index: {}".format(start_index, end_index))
             comparison_engine.compare_items(
                 item, argos_items_data[start_index:end_index])
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
@@ -69,8 +69,7 @@ def readCsv(file_path, delim=","):
         csvReader = csv.reader(csvDataFile, delimiter=delim)
         header = None
         for row in csvReader:
-            if len(row) == 3:
-                data.append(row)
+            data.append(row)
     header = data.pop(0)
     return header, data
 
@@ -94,7 +93,7 @@ def cosine_similarity(a, b):
     # we normalised the vectors so its just a divide
     # by one (which simplifies) and we are serching
     # for theta so we need to use inverse cos
-    cosine_similarity = tf.tensordot(a[0], b[0], 1)
+    cosine_similarity = tf.tensordot(a, b, 2)
     # normalizing between 1 and -1
     clip_cosine_similarities = tf.clip_by_value(cosine_similarity, -1.0, 1.0)
     return tf.acos(clip_cosine_similarities)
@@ -125,7 +124,7 @@ class USE():
         start_time = time.time()
         original_text_encoding = self.encode_all_columns(original_item[1:])
 
-        comparison_text = [row[1:3] for row in comparison_items]
+        comparison_text = [row[1:] for row in comparison_items]
         comparison_ids = np.array(comparison_items)[:, 0]
         output = self.encode_all_rows(comparison_text)
 
@@ -165,9 +164,10 @@ class ALBERT():
 
         albert_layer = bert.BertModelLayer.from_params(
             model_params, name="albert")
-        max_text_size = 128
+        max_text_size = 1
         self.model = self.build_network(albert_layer, max_text_size)
         bert.load_albert_weights(albert_layer, model_ckpt)
+        self.model.summary()
 
         spm_model = os.path.join(model_dir, "30k-clean.model")
         sp = spm.SentencePieceProcessor()
@@ -195,6 +195,7 @@ class ALBERT():
     def preprocess_input(self, smp_model, text, lower=True):
         processed_text = bert.albert_tokenization.preprocess_text(
             text, lower=lower)
+        processed_text = "[CLS]" + processed_text + "[SEP]"
         return bert.albert_tokenization.encode_ids(smp_model, processed_text)
 # https://github.com/kpe#/bert-for-tf2
 
