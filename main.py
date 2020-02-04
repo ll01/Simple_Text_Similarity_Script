@@ -37,6 +37,7 @@ def main():
             print("start_index: {}, end_index: {}".format(start_index, end_index))
             comparison_engine.compare_items(
                 item, argos_items_data[start_index:end_index])
+
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
             save_results(comparison_engine.scores, file_path)
             write_progress(sainsbury_item_index, batch)
@@ -108,7 +109,11 @@ def get_similarity_scores(a, datapoints):
     for datapoint in datapoints:
         datapoint_score = []
         for i, column in enumerate(datapoint):
-            datapoint_score.append(1.0 - cosine_similarity(a[i], column))
+            if (tf.is_tensor(column)):
+                score = 1.0 - cosine_similarity(a[i], column)
+            else:
+                score = tf.constant("n/a")
+            datapoint_score.append(score.numpy())
         scores.append(datapoint_score)
     return scores
 
@@ -138,9 +143,12 @@ class USE():
     def encode_all_columns(self, datapoints):
         output = []
         for column in datapoints:
-            output.append(
-                self.encode_using_universal_sentence_encoder(
-                    column, self.model))
+            if (column != ""):
+                output.append(
+                    self.encode_using_universal_sentence_encoder(
+                        column, self.model))
+            else :
+                output.append(None)
         return output
 
     def encode_all_rows(self, datapoints):
