@@ -8,7 +8,7 @@ import numpy as np
 import argparse
 import math
 import time
-from transformers import BertTokenizer
+import transformers
 
 
 def main():
@@ -174,57 +174,58 @@ class USE():
 
 class ALBERT():
     def __init__(self, first_text, second_text):
-        # https://tfhub.dev/google/albert_base/3
-        model_name = "albert_base_v2"
-        model_dir = bert.fetch_google_albert_model(model_name, ".models")
-        model_ckpt = os.path.join(model_dir, "model.ckpt-best")
-        model_params = bert.albert_params(model_dir)
-        albert_layer = albert_layer = bert.BertModelLayer.from_params(
-            model_params, name="albert")
+        model_name = 'albert-base-v2'
 
+        self.tokenizer = transformers.AlbertTokenizer.from_pretrained(
+            model_name)
+
+        hub_url = "https://tfhub.dev/google/albert_base/3"
+        print("downloading %s" % hub_url)
+        self.model = transformers.TFAlbertModel.from_pretrained(model_name)
+        print("dowloaded 😃")
+
+        truth = "I like my self."
         max_text_size = 128
-        self.model = self.build_network(albert_layer, max_text_size)
-        self.model.summary()
+        embeddings_a = self.get_embeddings([first_text], max_text_size)
+        embeddings_b = self.get_embeddings([second_text], max_text_size)
+        print(get_similarity_score(embeddings_a, embeddings_b))
 
-        spm_model = os.path.join(model_dir, "30k-clean.model")
-        sp = spm.SentencePieceProcessor()
-        sp.load(spm_model)
+    def preprocess_inputs(self, input_list, max_text_size):
+        input_ids = np.empty((len(input_list), max_text_size), dtype=int)
+        attention_mask = np.empty((len(input_list), max_text_size), dtype=int)
+        # also known as segment ids
+        token_type_ids = np.empty((len(input_list), max_text_size), dtype=int)
 
-        do_lower_case = True
+        for index, input in enumerate(input_list):
+            tokenized_input = self.tokenizer.encode_plus(
+                input, max_length=max_text_size,
+                pad_to_max_length=True)
+            input_ids[index] = tokenized_input["input_ids"]
+            attention_mask[index] = tokenized_input["attention_mask"]
+            token_type_ids[index] = tokenized_input["token_type_ids"]
+        return input_ids, attention_mask, token_type_ids
 
-        token_ids_a, mask_a = self.preprocess_input(
-            sp, first_text, max_text_size, do_lower_case)
-        token_ids_b , mask_b = self.preprocess_input(
-            sp, second_text, max_text_size, do_lower_case)
-
-        text_prediction_a = self.predict_result(token_ids_a, mask_a, max_text_size)
-        text_prediction_b = self.predict_result(token_ids_b, mask_b, max_text_size)
-
-
-        self.score = get_similarity_score(text_prediction_a, text_prediction_b)
+    def get_embeddings(self, input_list, max_text_size=512):
+        token_ids, input_mask, segment_ids = self.preprocess_inputs(
+            input_list,  max_text_size)
+        pooled_output = self.model([token_ids, input_mask, segment_ids])[0]
+        output = tf.keras.layers.GlobalAveragePooling1D()(pooled_output)
+        return tf.math.l2_normalize(output)
 
     def build_network(self, albert_layer, max_text_size):
         input_ids = tf.keras.layers.Input(
-             shape=(max_text_size,), dtype='int32')
-        #also known as mask
-        token_type_ids = tf.keras.layers.Input(shape=(max_text_size,), dtype='int32')
+            shape=(max_text_size,), dtype='int32')
+        # also known as mask
+        token_type_ids = tf.keras.layers.Input(
+            shape=(max_text_size,), dtype='int32')
 
         output = albert_layer([input_ids, token_type_ids])
         output = tf.keras.layers.GlobalAveragePooling1D()(output)
-        model = tf.keras.Model(inputs=[input_ids, token_type_ids], outputs=output)
+        model = tf.keras.Model(
+            inputs=[input_ids, token_type_ids], outputs=output)
         model.build(input_shape=[(None, max_text_size), (None, max_text_size)])
         return model
 
-    def preprocess_input(self, smp_model, text, max_text_size,  lower=True):
-        processed_text = bert.albert_tokenization.preprocess_text(
-            text, lower=lower)
-
-        tokens = bert.albert_tokenization.encode_ids(smp_model, processed_text)
-
-        tokens, mask = self.pad_tokens_and_generate_mask(tokens, max_text_size)
-
-        return tokens, mask
-# https://github.com/kpe#/bert-for-tf2
     def pad_tokens_and_generate_mask(self, tokens, max_text_size):
         mask = []
         for _ in range(len(tokens)):
@@ -233,14 +234,13 @@ class ALBERT():
             tokens.append(0)
             mask.append(0)
         return tokens, mask
-        
 
-    def predict_result(self, token_ids, mask , max_text_size):
+    def predict_result(self, token_ids, mask, max_text_size):
         ids = np.array([token_ids])
         mask = np.array([mask])
         # x = tf.reshape(x, shape=(-1, 128))
         return tf.math.l2_normalize(self.model.predict(
-            [ids,mask], use_multiprocessing=True))
+            [ids, mask], use_multiprocessing=True))
 
 
 if __name__ == "__main__":
