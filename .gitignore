@@ -1265,4 +1265,8 @@ healthchecksdb
 MigrationBackup/
 
 # End of https://www.gitignore.io/api/linux,macos,python,pycharm,windows,database,visualstudio,visualstudiocode
-2
+results/
+.models/
+models/
+*.csv
+*.zip

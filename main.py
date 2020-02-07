@@ -8,6 +8,7 @@ import numpy as np
 import argparse
 import math
 import time
+from transformers import BertTokenizer
 
 
 def main():
@@ -140,6 +141,14 @@ class USE():
         print("comparison of {} items ran for {:0.2f}s".format(
             len(comparison_items),  end_time - start_time))
 
+    def compare_texts(self, a, b):
+        encodeing_a = self.encode_using_universal_sentence_encoder(
+            a, self.model)
+        encodeing_b = self.encode_using_universal_sentence_encoder(
+            b, self.model)
+        score = get_similarity_score(encodeing_a, encodeing_b)
+        return score
+
     def encode_all_columns(self, datapoints):
         output = []
         for column in datapoints:
@@ -147,7 +156,7 @@ class USE():
                 output.append(
                     self.encode_using_universal_sentence_encoder(
                         column, self.model))
-            else :
+            else:
                 output.append(None)
         return output
 
@@ -165,16 +174,16 @@ class USE():
 
 class ALBERT():
     def __init__(self, first_text, second_text):
+        # https://tfhub.dev/google/albert_base/3
         model_name = "albert_base_v2"
         model_dir = bert.fetch_google_albert_model(model_name, ".models")
         model_ckpt = os.path.join(model_dir, "model.ckpt-best")
         model_params = bert.albert_params(model_dir)
-
-        albert_layer = bert.BertModelLayer.from_params(
+        albert_layer = albert_layer = bert.BertModelLayer.from_params(
             model_params, name="albert")
-        max_text_size = 1
+
+        max_text_size = 128
         self.model = self.build_network(albert_layer, max_text_size)
-        bert.load_albert_weights(albert_layer, model_ckpt)
         self.model.summary()
 
         spm_model = os.path.join(model_dir, "30k-clean.model")
@@ -183,33 +192,55 @@ class ALBERT():
 
         do_lower_case = True
 
-        token_ids_a = self.preprocess_input(
-            sp, first_text, do_lower_case)
-        token_ids_b = self.preprocess_input(
-            sp, second_text, do_lower_case)
+        token_ids_a, mask_a = self.preprocess_input(
+            sp, first_text, max_text_size, do_lower_case)
+        token_ids_b , mask_b = self.preprocess_input(
+            sp, second_text, max_text_size, do_lower_case)
 
-        text_prediction_a = self.predict_result(token_ids_a)
-        text_prediction_b = self.predict_result(token_ids_b)
-        print(get_similarity_score(text_prediction_a, text_prediction_b))
+        text_prediction_a = self.predict_result(token_ids_a, mask_a, max_text_size)
+        text_prediction_b = self.predict_result(token_ids_b, mask_b, max_text_size)
+
+
+        self.score = get_similarity_score(text_prediction_a, text_prediction_b)
 
     def build_network(self, albert_layer, max_text_size):
         input_ids = tf.keras.layers.Input(
-            shape=(max_text_size,), dtype='int32')
-        output = albert_layer(input_ids)
-        model = tf.keras.Model(inputs=input_ids, outputs=output)
-        model.build(input_shape=(None, max_text_size))
+             shape=(max_text_size,), dtype='int32')
+        #also known as mask
+        token_type_ids = tf.keras.layers.Input(shape=(max_text_size,), dtype='int32')
+
+        output = albert_layer([input_ids, token_type_ids])
+        output = tf.keras.layers.GlobalAveragePooling1D()(output)
+        model = tf.keras.Model(inputs=[input_ids, token_type_ids], outputs=output)
+        model.build(input_shape=[(None, max_text_size), (None, max_text_size)])
         return model
 
-    def preprocess_input(self, smp_model, text, lower=True):
+    def preprocess_input(self, smp_model, text, max_text_size,  lower=True):
         processed_text = bert.albert_tokenization.preprocess_text(
             text, lower=lower)
-        processed_text = "[CLS]" + processed_text + "[SEP]"
-        return bert.albert_tokenization.encode_ids(smp_model, processed_text)
-# https://github.com/kpe#/bert-for-tf2
 
-    def predict_result(self, token_ids):
-        return self.model.predict(
-            token_ids, batch_size=1, use_multiprocessing=True)
+        tokens = bert.albert_tokenization.encode_ids(smp_model, processed_text)
+
+        tokens, mask = self.pad_tokens_and_generate_mask(tokens, max_text_size)
+
+        return tokens, mask
+# https://github.com/kpe#/bert-for-tf2
+    def pad_tokens_and_generate_mask(self, tokens, max_text_size):
+        mask = []
+        for _ in range(len(tokens)):
+            mask.append(1)
+        for _ in range(max_text_size - len(tokens)):
+            tokens.append(0)
+            mask.append(0)
+        return tokens, mask
+        
+
+    def predict_result(self, token_ids, mask , max_text_size):
+        ids = np.array([token_ids])
+        mask = np.array([mask])
+        # x = tf.reshape(x, shape=(-1, 128))
+        return tf.math.l2_normalize(self.model.predict(
+            [ids,mask], use_multiprocessing=True))
 
 
 if __name__ == "__main__":

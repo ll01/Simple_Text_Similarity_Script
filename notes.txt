@@ -1,0 +1,5 @@
+ask where the description data is for example
+this is because there are different types of discription
+
+i need to find out where the website gets there source info. 
+may be able to pull supplier out of sterling  
