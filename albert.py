@@ -24,7 +24,6 @@ class ALBERT():
 
 
     def compare_texts(self):
-
          pass 
 
     def preprocess_inputs(self, input_list, max_text_size):

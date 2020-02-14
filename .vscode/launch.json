@@ -9,7 +9,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/albert.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
             // "args": ["-a", "${workspaceFolder}/argos.tsv"]
         }

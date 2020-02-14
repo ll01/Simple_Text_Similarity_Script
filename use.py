@@ -11,8 +11,9 @@ class USE():
     def __init__(self):
 
         hub_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
+        print("downloading %s" % hub_url)
         self.model = hub.load(hub_url)
-        self.scores = None
+        print("dowloaded 😃")
     
 
     def compare_texts(self, a, b):

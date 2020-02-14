@@ -10,11 +10,10 @@ from common_functions import compare_items
 
 
 def main():
-
     args = set_up_args()
 
     header, argos_items_data = readCsv(args.argos)
-    print(header)
+    print("argos data header: %s" % header)
     _, sainsbury_items_data = readCsv(args.sainsbury)
     comparison_engine = use.USE()
 
@@ -33,8 +32,7 @@ def main():
             start_index = (batch * args.batch_size)
             end_index = min((start_index+args.batch_size),
                             len(argos_items_data))
-            print("start_index: {}, end_index: {}".format(
-                start_index, end_index))
+            print("start_index: {}, end_index: {}".format(start_index, end_index))
             scores_with_ids = compare_items(
                 item, argos_items_data[start_index:end_index],
                 comparison_engine.encode_using_universal_sentence_encoder)
@@ -86,3 +84,6 @@ def save_results(data, file_path):
 def write_progress(item, batch):
     with open("progress.txt", "w") as progress_file:
         progress_file.write("{}\n{}\n".format(item, batch))
+
+if __name__ == "__main__":
+    main()
