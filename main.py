@@ -35,7 +35,7 @@ def main():
             print("start_index: {}, end_index: {}".format(start_index, end_index))
             scores_with_ids = compare_items(
                 item, argos_items_data[start_index:end_index],
-                comparison_engine.encode_using_universal_sentence_encoder)
+                comparison_engine.embed)
 
             file_path = os.path.join(args.output, "{}.csv".format(item[0]))
             save_results(scores_with_ids, file_path)

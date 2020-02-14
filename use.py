@@ -4,7 +4,7 @@ import numpy as np
 
 import time
 
-from common_functions import get_similarity_score, compare_items
+from common_functions import get_similarity_score
 
 
 class USE():
@@ -17,12 +17,12 @@ class USE():
     
 
     def compare_texts(self, a, b):
-        encodeing_a = self.encode_using_universal_sentence_encoder(a)
-        encodeing_b = self.encode_using_universal_sentence_encoder(b)
+        encodeing_a = self.embed(a)
+        encodeing_b = self.embed(b)
         score = get_similarity_score(encodeing_a, encodeing_b)
         return score
 
-    def encode_using_universal_sentence_encoder(self, data):
+    def embed(self, data):
         embeddings = self.model([data])
         embeddings_normalized = tf.math.l2_normalize(embeddings)
         return embeddings_normalized

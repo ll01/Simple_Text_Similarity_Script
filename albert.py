@@ -5,8 +5,7 @@ import transformers
 
 import time
 
-from common_functions import encode_row, encode_dataset, get_similarity_score,\
-    get_similarity_scores
+from common_functions import  get_similarity_scores
 
 
 class ALBERT():
@@ -41,7 +40,7 @@ class ALBERT():
             token_type_ids[index] = tokenized_input["token_type_ids"]
         return input_ids, attention_mask, token_type_ids
 
-    def get_embeddings(self, input_list):
+    def embed(self, input_list):
         token_ids, input_mask, segment_ids = self.preprocess_inputs(
             input_list,  self.max_text_size)
         pooled_output = self.model([token_ids, input_mask, segment_ids])[0]
